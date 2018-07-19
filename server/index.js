@@ -22,6 +22,13 @@ function subscribeToDrawings({ client, connection }) {
         });
 }
 
+function handleLinePublish({ connection, line }) {
+    console.log('saving line to the db');
+    r.table('lines')
+        .insert(Object.assign(line, { timestamp: new Date() }))
+        .run(connection);
+}
+
 // opens up a RethinkDB connection
 r.connect({
     host: 'localhost',
@@ -36,6 +43,11 @@ r.connect({
         client.on('subscribeToDrawings', () => subscribeToDrawings({
             client,
             connection
+        }));
+
+        client.on('publishLine', (line) => handleLinePublish({
+            connection,
+            line
         }));
     });
 })

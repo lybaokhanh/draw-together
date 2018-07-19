@@ -29,6 +29,23 @@ function handleLinePublish({ connection, line }) {
         .run(connection);
 }
 
+/*
+    * row: check the specific field  
+    * eq: equal with value    
+*/
+function subscribeToDrawingLines({ client, connection, drawingId }) {
+    return r.table('lines')
+        .filter(r.row('drawingId').eq(drawingId))
+        .changes({ include_initial: true })
+        .run(connection)
+        .then((cursor) => {
+            cursor.each((err, lineRow) => client.emit(
+                `drawingLine:${drawingId}`,
+                lineRow.new_val
+            ))
+        })
+}
+
 // opens up a RethinkDB connection
 r.connect({
     host: 'localhost',
@@ -48,6 +65,12 @@ r.connect({
         client.on('publishLine', (line) => handleLinePublish({
             connection,
             line
+        }));
+
+        client.on('subscribeToDrawingLines', (drawingId) => subscribeToDrawingLines({
+            client,
+            connection,
+            drawingId
         }));
     });
 })

@@ -1,8 +1,22 @@
 import React, { Component } from 'react';
 import Canvas from 'simple-react-canvas';
-import { publishLine } from './api';
+import { publishLine, subscribeToDrawingLines } from './api';
 
 class Drawing extends Component {
+    state = {
+        lines: [],
+    };
+
+    componentDidMount() {
+        subscribeToDrawingLines(this.props.drawing.id, (line) => {
+            this.setState((prevState) => {
+                return {
+                    lines: [...prevState.lines, line],
+                };
+            });
+        });
+    }
+
     handleDraw = (line) => {
         publishLine({
             drawingId: this.props.drawing.id,
@@ -17,6 +31,7 @@ class Drawing extends Component {
                 <Canvas
                     drawingEnabled={true}
                     onDraw={this.handleDraw}
+                    lines={this.state.lines}
                 />
             </div>
         ) : null;

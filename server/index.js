@@ -22,11 +22,12 @@ function subscribeToDrawings({ client, connection }) {
         });
 }
 
-function handleLinePublish({ connection, line }) {
+function handleLinePublish({ connection, line, callback }) {
     console.log('saving line to the db');
     r.table('lines')
         .insert(Object.assign(line, { timestamp: new Date() }))
-        .run(connection);
+        .run(connection)
+        .then(callback); // ensure client gets notified when it's done
 }
 
 /*
@@ -70,9 +71,10 @@ r.connect({
             connection
         }));
 
-        client.on('publishLine', (line) => handleLinePublish({
+        client.on('publishLine', (line, callback) => handleLinePublish({
             connection,
-            line
+            line,
+            callback,
         }));
 
         client.on('subscribeToDrawingLines', ({ drawingId, from }) => subscribeToDrawingLines({

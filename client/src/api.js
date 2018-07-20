@@ -1,5 +1,6 @@
 import openSocket from 'socket.io-client';
 import Rx from 'rxjs/Rx';
+import createSync from 'rxsync';
 
 const port = parseInt(window.location.search.replace('?', ''), 10) || 8000;
 const socket = openSocket(`http://localhost:${port}`);
@@ -13,8 +14,33 @@ function createDrawing(name) {
     socket.emit('createDrawing', { name });
 }
 
+// each item pass to the sync and sync up with a promise
+const sync = createSync({
+    maxRetries: 10,
+    delayBetweenRetries: 1000,
+    syncAction: line => new Promise((resolve, reject) => {
+        let sent = false;
+
+        // if success callback, resolve the promise
+        socket.emit('publishLine', line, () => {
+            sent = true;
+            resolve();
+        });
+
+        // if we don't receive one after 2s, reject the promise
+        setTimeout(() => {
+            if (!sent) {
+                reject();
+            }
+        }, 2000);
+    })
+})
+
+sync.failedItems.subscribe(x => console.error('failed line sync ', x));
+sync.syncedItems.subscribe(x => console.log('line synced ', x));
+
 function publishLine({ drawingId, line }) {
-    socket.emit('publishLine', { drawingId, ...line });
+    sync.queue({ drawingId, ...line });
 }
 
 /*

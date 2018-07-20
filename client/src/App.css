@@ -109,3 +109,16 @@ body {
 .DrawingList-item:last-child {
   border-bottom: none;
 }
+
+.Connection-error {
+  background-color: red;
+  color: #fff;
+  padding: 10px;
+  font-size: 20px;
+}
+
+.Connection-port {
+  background-color:#fff;
+  padding: 10px;
+  font-size: 20px;
+}

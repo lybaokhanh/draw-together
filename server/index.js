@@ -33,9 +33,17 @@ function handleLinePublish({ connection, line }) {
     * row: check the specific field  
     * eq: equal with value    
 */
-function subscribeToDrawingLines({ client, connection, drawingId }) {
+function subscribeToDrawingLines({ client, connection, drawingId, from }) {
+    let query = r.row('drawingId').eq(drawingId);
+
+    if (from) {
+        query = query.and(
+            r.row('timestamp').ge(new Date(from))
+        );
+    }
+
     return r.table('lines')
-        .filter(r.row('drawingId').eq(drawingId))
+        .filter(query)
         .changes({ include_initial: true })
         .run(connection)
         .then((cursor) => {
@@ -67,10 +75,11 @@ r.connect({
             line
         }));
 
-        client.on('subscribeToDrawingLines', (drawingId) => subscribeToDrawingLines({
+        client.on('subscribeToDrawingLines', ({ drawingId, from }) => subscribeToDrawingLines({
             client,
             connection,
-            drawingId
+            drawingId,
+            from,
         }));
     });
 })

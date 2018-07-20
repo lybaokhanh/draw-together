@@ -33,8 +33,25 @@ function subscribeToDrawingLines(drawingId, cb) {
     const bufferedTimeStream = lineStream.bufferTime(100)
         .map(lines => ({ lines }));
 
+    const reconnectStream = Rx.Observable.fromEventPattern(
+        handler => socket.on('connect', handler),
+        handler => socket.off('connect', handler)
+    );
+
+    const maxStream = lineStream.map(l => new Date(l.timestamp).getTime())
+        .scan((a, b) => Math.max(a, b), 0);
+
+    reconnectStream.withLatestFrom(maxStream)
+        .subscribe((joined) => {
+            const lastReceivedTimestamp = joined[1];
+            socket.emit('subscribeToDrawingLines', {
+                drawingId,
+                from: lastReceivedTimestamp,
+            });
+        });
+
     bufferedTimeStream.subscribe(linesEvent => cb(linesEvent));
-    socket.emit('subscribeToDrawingLines', drawingId);
+    socket.emit('subscribeToDrawingLines', { drawingId });
 }
 
 function subscribeToconnectionEvent(cb) {
